@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050b18">
+  <meta name="description" content="JARVIS, asistente de voz personal para computadora y Android.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/jarvis.svg" type="image/svg+xml">
+  <title>J.A.R.V.I.S. — Asistente personal</title>
+  <style>
+    :root{color-scheme:dark;--bg:#050b18;--panel:#0a1628;--line:#164b69;--cyan:#58e6ff;--blue:#348bff;--muted:#91b3c9;--white:#eafaff}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 35%,#10294a 0%,#071326 38%,#030711 100%);font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:var(--white);display:flex;justify-content:center}
+    .app{width:min(100%,980px);padding:22px 18px 32px;display:flex;flex-direction:column;align-items:center;gap:20px}
+    header{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #17405a;padding-bottom:14px}
+    .brand{letter-spacing:.22em;font-weight:800;font-size:clamp(17px,3vw,25px);color:var(--cyan)} .sub{font-size:11px;color:var(--muted);letter-spacing:.16em;margin-top:4px}
+    .status{font-size:12px;border:1px solid #24536c;border-radius:999px;padding:8px 11px;color:var(--muted);white-space:nowrap}.status:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#6b8494;margin-right:7px}.status.on{color:#b9ffef}.status.on:before{background:#4dffbf;box-shadow:0 0 10px #4dffbf}
+    .orb-wrap{width:min(62vw,270px);aspect-ratio:1;display:grid;place-items:center;position:relative;margin:8px 0 0}
+    .ring{position:absolute;inset:0;border:1px solid #2a8db4;border-radius:50%;box-shadow:0 0 28px #1175a055,inset 0 0 28px #1175a033;animation:spin 18s linear infinite}
+    .ring:before,.ring:after{content:"";position:absolute;border:1px dashed #318fc2;border-radius:50%;inset:13px;transform:rotateX(65deg)}
+    .ring:after{inset:27px;transform:rotateY(65deg)}
+    .orb{width:56%;aspect-ratio:1;border-radius:50%;border:2px solid #65eaff;background:radial-gradient(circle at 35% 28%,#b8fbff 0%,#36b8ed 9%,#1261a7 34%,#06152d 72%);box-shadow:0 0 18px #40d9ff,0 0 65px #127cce77,inset 0 0 28px #9ff7ff77;position:relative}
+    .orb:after{content:"";position:absolute;inset:15%;border-radius:50%;border:1px solid #a6f9ff88;box-shadow:0 0 18px #62e7ff55}
+    .listening .orb{animation:pulse 1.2s ease-in-out infinite}.listening .ring{border-color:#6bffe2;box-shadow:0 0 40px #22ffce55}
+    @keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{50%{transform:scale(1.07);filter:brightness(1.35)}}
+    h1{font-size:clamp(24px,4vw,38px);margin:0;letter-spacing:.12em;text-align:center} .tagline{margin-top:-13px;text-align:center;color:var(--muted);font-size:14px}
+    .actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;width:100%}
+    button{font:inherit;border:1px solid #287aa0;color:var(--white);background:#0a2038;border-radius:12px;padding:12px 17px;cursor:pointer;transition:.2s}
+    button:hover{border-color:var(--cyan);box-shadow:0 0 18px #36c9ff22}button.primary{background:linear-gradient(135deg,#087ca9,#1457b6);border-color:#65eaff;font-weight:700}button:disabled{opacity:.45;cursor:not-allowed}
+    .grid{width:100%;display:grid;grid-template-columns:1.1fr .9fr;gap:14px}.panel{border:1px solid #164561;background:linear-gradient(145deg,#0a1a2cdd,#06101fdd);border-radius:16px;padding:16px;box-shadow:0 12px 35px #0003}
+    .panel h2{font-size:13px;letter-spacing:.16em;color:var(--cyan);margin:0 0 12px}.response{min-height:92px;line-height:1.55;color:#e2f6ff;white-space:pre-wrap}.heard{font-size:13px;color:var(--muted);margin-top:10px;min-height:20px}
+    .quick{display:grid;grid-template-columns:1fr 1fr;gap:8px}.quick button{padding:10px 8px;font-size:13px}
+    .entry{width:100%;display:flex;gap:8px}.entry input{flex:1;min-width:0;background:#040c18;color:white;border:1px solid #22536d;border-radius:12px;padding:13px;font:inherit;outline:none}.entry input:focus{border-color:var(--cyan)}
+    .hint{font-size:12px;color:#8eacc1;line-height:1.5;text-align:center;max-width:720px}.hint b{color:#c4f7ff}
+    footer{color:#67869b;font-size:11px;text-align:center;line-height:1.5}
+    @media(max-width:650px){.grid{grid-template-columns:1fr}.app{padding:16px 13px 25px}.orb-wrap{width:min(55vw,220px)}header{align-items:flex-start}.status{font-size:10px;padding:7px}}
+  </style>
+</head>
+<body>
+<main class="app" id="app">
+  <header>
+    <div><div class="brand">J.A.R.V.I.S.</div><div class="sub">ASISTENTE PERSONAL · PROTOTIPO 01</div></div>
+    <div id="status" class="status">EN ESPERA</div>
+  </header>
+  <div class="orb-wrap" aria-hidden="true"><div class="ring"></div><div class="orb"></div></div>
+  <h1>¿EN QUÉ PUEDO AYUDARTE?</h1>
+  <div class="tagline">Asistente de voz para Android y Windows</div>
+  <div class="actions">
+    <button id="talk" class="primary">🎙️ Hablar con JARVIS</button>
+    <button id="wake">Activar escucha de “JARVIS”</button>
+    <button id="stop">Detener voz</button>
+  </div>
+  <div class="grid">
+    <section class="panel">
+      <h2>RESPUESTA DEL SISTEMA</h2>
+      <div id="response" class="response">Sistema iniciado. Pulsa “Hablar con JARVIS” y di un comando. También puedes activar la escucha de la palabra “JARVIS”.</div>
+      <div id="heard" class="heard">Última orden: ninguna</div>
+    </section>
+    <section class="panel">
+      <h2>COMANDOS RÁPIDOS</h2>
+      <div class="quick">
+        <button data-command="¿Qué hora es?">🕒 Hora actual</button>
+        <button data-command="¿Qué fecha es hoy?">📅 Fecha de hoy</button>
+        <button data-command="Abre YouTube">▶️ Abrir YouTube</button>
+        <button data-command="Abre Google">🌐 Abrir Google</button>
+        <button data-command="Abre ChatGPT">🤖 Abrir ChatGPT</button>
+        <button data-command="Busca información sobre Java">💻 Buscar Java</button>
+      </div>
+    </section>
+  </div>
+  <form id="form" class="entry">
+    <input id="textCommand" autocomplete="off" placeholder="Escribe una orden para JARVIS…" aria-label="Escribe una orden">
+    <button class="primary" type="submit">Enviar</button>
+  </form>
+  <div class="hint"><b>Ejemplos:</b> “JARVIS, ¿qué hora es?”, “abre YouTube”, “busca información sobre programación Java”, “detén la escucha”. La escucha por palabra clave funciona mientras esta página está abierta y el navegador mantiene el micrófono activo.</div>
+  <footer>Prototipo inicial gratuito. El reconocimiento de voz depende del navegador y de la conexión. Esta versión no es todavía una IA generativa ni puede controlar programas de Windows directamente.</footer>
+</main>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const app = $('app'), status = $('status'), response = $('response'), heard = $('heard');
+  const talkBtn = $('talk'), wakeBtn = $('wake');
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null, wakeMode = false, busy = false, lastSpoken = '';
+  function setStatus(text, on=false){status.textContent=text;status.classList.toggle('on',on)}
+  function say(text){
+    response.textContent = text;
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'es-ES'; u.rate = 1; u.pitch = 0.95;
+      const voices = speechSynthesis.getVoices();
+      const spanish = voices.find(v => /^es(-|_)/i.test(v.lang));
+      if (spanish) u.voice = spanish;
+      speechSynthesis.speak(u);
+    }
+  }
+  function openUrl(url){window.open(url,'_blank','noopener,noreferrer')}
+  function runCommand(raw){
+    const original = (raw || '').trim();
+    const cmd = original.toLowerCase().replace(/[¿?¡!,.;:]/g,' ').replace(/\s+/g,' ').trim();
+    if (!cmd) return;
+    heard.textContent = 'Última orden: ' + original;
+    const clean = cmd.replace(/^jarvis[\s,]*/,'').trim();
+    if (/\b(detente|detener|para|parar|silencio|detén la escucha|desactiva escucha)\b/.test(clean)) {
+      wakeMode = false; if(recognition){try{recognition.stop()}catch(e){}}
+      setStatus('EN ESPERA'); say('De acuerdo. He detenido la escucha.'); wakeBtn.textContent='Activar escucha de “JARVIS”'; return;
+    }
+    if (/\b(hora|qué hora)\b/.test(clean)) {
+      say('Son las ' + new Intl.DateTimeFormat('es-BO',{hour:'2-digit',minute:'2-digit'}).format(new Date()) + '.'); return;
+    }
+    if (/\b(fecha|día de hoy|qué día)\b/.test(clean)) {
+      say('Hoy es ' + new Intl.DateTimeFormat('es-BO',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(new Date()) + '.'); return;
+    }
+    if (/\b(abre|abrir|inicia|ir a)\b/.test(clean) && /\byoutube\b/.test(clean)) {say('Abriendo YouTube.');openUrl('https://www.youtube.com');return}
+    if (/\b(abre|abrir|inicia|ir a)\b/.test(clean) && /\bgoogle\b/.test(clean)) {say('Abriendo Google.');openUrl('https://www.google.com');return}
+    if (/\b(abre|abrir|inicia|ir a)\b/.test(clean) && /\bchatgpt\b/.test(clean)) {say('Abriendo ChatGPT.');openUrl('https://chatgpt.com');return}
+    if (/\b(busca|buscar|búscame|investiga)\b/.test(clean)) {
+      let q = clean.replace(/^(jarvis\s*)?(busca|buscar|búscame|investiga)\s*/,'').trim();
+      if(!q) q='información';
+      say('Buscando en internet: ' + q);
+      openUrl('https://www.google.com/search?q='+encodeURIComponent(q)); return;
+    }
+    if (/\b(hola|buenos días|buenas tardes|buenas noches)\b/.test(clean)) {say('Hola. Estoy listo para ayudarte. Por ahora puedo decirte la hora, la fecha, abrir páginas y buscar información.');return}
+    if (/\b(qué puedes hacer|ayuda|comandos)\b/.test(clean)) {say('Puedo decirte la hora y la fecha, abrir YouTube, Google o ChatGPT y buscar información en internet. Esta es la primera versión de JARVIS.');return}
+    say('He escuchado: ' + original + '. En esta versión todavía no tengo una inteligencia artificial conectada para responder preguntas generales. Puedes pedirme la hora, la fecha, abrir una página o buscar en Google.');
+  }
+  function createRecognition(){
+    if(!SpeechRecognition){say('Este navegador no admite reconocimiento de voz. Prueba Google Chrome o Microsoft Edge actualizado.');return null}
+    const r = new SpeechRecognition(); r.lang='es-BO';r.continuous=true;r.interimResults=true; r.maxAlternatives=1;
+    r.onstart=()=>{setStatus(wakeMode?'ESCUCHANDO “JARVIS”':'ESCUCHANDO',true);app.classList.add('listening')};
+    r.onend=()=>{app.classList.remove('listening'); if(wakeMode){setTimeout(()=>{try{r.start()}catch(e){}},450)}else setStatus('EN ESPERA')};
+    r.onerror=e=>{
+      if(e.error==='not-allowed'||e.error==='service-not-allowed'){wakeMode=false;setStatus('MICRÓFONO BLOQUEADO');say('Necesito permiso para usar el micrófono. Actívalo en los permisos del navegador.');}
+      else if(e.error==='network'){say('El reconocimiento de voz necesita conexión a internet en este navegador.');}
+    };
+    r.onresult=e=>{
+      let transcript='';
+      for(let i=e.resultIndex;i<e.results.length;i++) transcript += e.results[i][0].transcript;
+      const lower=transcript.toLowerCase();
+      if(wakeMode){
+        const idx=lower.lastIndexOf('jarvis');
+        if(idx>=0){
+          const order=transcript.slice(idx+6).trim();
+          if(order){runCommand(order);return}
+          say('Te escucho. ¿Qué necesitas?');
+          wakeMode=false;try{r.stop()}catch(e){}; setTimeout(()=>startOneShot(),350);
+        }
+      } else if(e.results[e.results.length-1].isFinal){
+        runCommand(transcript); if(!wakeMode){try{r.stop()}catch(e){}}
+      }
+    };
+    return r;
+  }
+  function startOneShot(){
+    wakeMode=false;
+    if(!recognition) recognition=createRecognition();
+    if(!recognition)return;
+    try{recognition.start()}catch(e){setTimeout(()=>{try{recognition.start()}catch(_){}},300)}
+  }
+  talkBtn.addEventListener('click',()=>{wakeMode=false;if(recognition){try{recognition.stop()}catch(e){}}setTimeout(startOneShot,180)});
+  wakeBtn.addEventListener('click',()=>{
+    if(wakeMode){wakeMode=false;if(recognition){try{recognition.stop()}catch(e){}}setStatus('EN ESPERA');wakeBtn.textContent='Activar escucha de “JARVIS”';say('Escucha por palabra clave desactivada.');return}
+    if(!recognition)recognition=createRecognition();if(!recognition)return;
+    wakeMode=true;wakeBtn.textContent='Desactivar escucha de “JARVIS”';
+    try{recognition.start()}catch(e){say('No pude iniciar el micrófono. Comprueba los permisos e inténtalo otra vez.')}
+  });
+  $('stop').addEventListener('click',()=>{if('speechSynthesis'in window)speechSynthesis.cancel();});
+  $('form').addEventListener('submit',e=>{e.preventDefault();runCommand($('textCommand').value);$('textCommand').value='';});
+  document.querySelectorAll('[data-command]').forEach(b=>b.addEventListener('click',()=>runCommand(b.dataset.command)));
+  if('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+  if(!SpeechRecognition){setStatus('VOZ NO COMPATIBLE');}
+  window.addEventListener('beforeunload',()=>{wakeMode=false;if(recognition){try{recognition.stop()}catch(e){}}});
+})();
+</script>
+</body>
+</html>
